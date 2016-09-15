@@ -1,0 +1,37 @@
+{ "name": "callback-timeout-flexible",
+  "version": "0.1.0",
+  "description": "Start with a short time limit and extend it dynamically.",
+  "keywords": [
+    "callback",
+    "chain",
+    "extend",
+    "extendable",
+    "extendible",
+    "flexible",
+    "function",
+    "prolong",
+    "prolongable",
+    "renew",
+    "renewable",
+    "time limit",
+    "timeout"
+  ],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/callback-timeout-flexible-js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/callback-timeout-flexible-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/callback-timeout-flexible-js/issues"
+  },
+
+  "private": false, "license": "ISC",
+
+  "main": "ctf.js",
+  "scripts": { "test": "nodejs test.js" },
+  "dependencies": {},
+
+  "npm vs. BOM = Unexpected token": "-*- coding: UTF-8 -*-"
+}
