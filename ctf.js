@@ -26,7 +26,7 @@ module.exports = (function (CF, PT, ctf) {
     } else {
       stack = 'stack trace not available';
     }
-    descr = (String(origCb).split(/[\n\s]*\{/)[0
+    descr = (String(origCb).split(/\s*\{/)[0
       ].replace(/^function\s+(\w)/, '$1'
       ) || 'anonymous function');
     return ('for ' + descr + ', set up at ' + stack);
