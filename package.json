@@ -1,6 +1,6 @@
 { "name": "callback-timeout-flexible",
-  "version": "0.1.0",
-  "description": "Start with a short time limit and extend it dynamically.",
+  "version": "0.1.1",
+  "description": "Start with a short time limit and extend it dynamically. [npm search keywords: callback chain extend extendable extendible flexible function prolong prolongable renew renewable time limit timeout]",
   "keywords": [
     "callback",
     "chain",

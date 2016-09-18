@@ -8,12 +8,16 @@ module.exports = (function (CF, PT, ctf) {
     var tmo = new CF(timeoutSec), prx;
     prx = function callbackTimeoutFlexible_proxy() { tmo.called(arguments); };
     prx.timeout = tmo;
+    prx.toString = ctf.proxyToString;
     tmo.reportTo = origCb;
     if (tmo.name === undefined) {
       tmo.guessName = ctf.guessName.bind(tmo, origCb, (new Error(' ')).stack);
     }
     tmo.renew(true);
     return prx;
+  };
+  ctf.proxyToString = function () {
+    return '[proxyFunc ' + String(this.timeout) + ']';
   };
   ctf.guessName = function (origCb, stack) {
     var descr;
