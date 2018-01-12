@@ -51,7 +51,9 @@ module.exports = (function (CF, PT, ctf) {
   ctf.Timeout = CF;
   PT = CF.prototype;
   PT.onLateCall = null;
+  PT.onBeforeTimeout = null;
   PT.hadLateCalls = false;
+  PT.hasTimedOut = false;
   PT.startTime = null;
   PT.finishTime = null;
 
@@ -78,6 +80,7 @@ module.exports = (function (CF, PT, ctf) {
     if (sec === null) { return; }
     if (sec === true) { sec = this.limitSec; }
     if (sec > 0) {
+      this.hasTimedOut = false;
       this.timer = setTimeout(this.timeIsUp.bind(this), sec * 1000);
       return true;
     }
@@ -85,7 +88,7 @@ module.exports = (function (CF, PT, ctf) {
   };
 
   PT.called = function (args) {
-    var tmo = this;
+    var tmo = this, onLate = tmo.onLateCall;
     tmo.renew(null);
     if (tmo.hadLateCalls === false) {
       if (this.startTime || (this.startTime === 0)) {
@@ -97,7 +100,10 @@ module.exports = (function (CF, PT, ctf) {
       });
     } else {
       tmo.hadLateCalls = (+tmo.hadLateCalls || 0) + 1;
-      if (tmo.onLateCall) { return tmo.onLateCall.apply(tmo, args); }
+      if (onLate) {
+        if (onLate === true) { onLate = tmo.reportTo; }
+        return onLate.apply(tmo, args);
+      }
     }
   };
 
@@ -105,6 +111,9 @@ module.exports = (function (CF, PT, ctf) {
     var tmo = this;
     tmo.renew(null);
     tmo.hadLateCalls = (tmo.hadLateCalls || 0);
+    tmo.hasTimedOut = true;
+    if (tmo.onBeforeTimeout) { tmo.onBeforeTimeout(tmo); }
+    if (!tmo.hasTimedOut) { return; }
     return tmo.reportTo(tmo.errFac());
   };
 

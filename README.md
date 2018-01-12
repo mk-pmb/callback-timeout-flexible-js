@@ -18,76 +18,100 @@ Additional features:
 
 
 
+API
+---
+
+This module exports one function:
+
+### callbackTimeoutFlexible(origCb, timeoutSec)
+
+Immediately starts a timeout timer, then returns a timeout-aware
+callback (proxy) function `prx`.
+When `prx` is called within `timeoutSec` seconds, it schedules
+function `origCb` to be called very soon, with the same arguments
+that were passed to `prx`. (`this` context is not preserved.)
+
+When the timeout expires before `prx` is invoked, `origCb` will be called
+with one argument, an `Error` that describes which timeout has expired.
+(Or whatever `opt.errFac` returned, see below.)
+
+There's a timeout control object (TCO) in `prx.timeout`
+which allows to extend the timeout (see below).
+
+`timeoutSec` can be a config object instead of a number, with these options:
+
+Mandatory options:
+
+* `limitSec`: Timeout in seconds. Expected to be a positive number.
+
+Optional options:
+
+* `name`: A custom name for this timeout, to be used in or as its description.
+* `onLateCall`: What to do when `prx` is called after `origCb` has
+  already been notified, either because of a previous `prx` invocation,
+  or because the timeout has expired.
+  * any `false`-y value: Don't notify. Discard the arguments.
+  * `true`: Forward the invocation to `origCb`.
+  * any function: Forward the invocation to that function.
+* `onBeforeTimeout`: A function to be called (with one argument: the TCO)
+  just before `origCb` would be called with a timeout error.
+  It's intended as a last-minute opportunity to extend the timeout.
+* `startTime`: Set to `true` to request timestamps.
+* `errFac`: Factory function to use for producing the timeout errors.
+* `errMsg`: Template string for the default error factory's error messages.
+  Supports these variable slots:
+  * `\v{name}`: `tco.name`
+  * `\v{this}`: `String(tco)`
+
+
+
+Timeout control objects
+-----------------------
+
+### .renew(sec)
+
+* With a positive number as `sec`: Extend the timeout so it triggers
+  in `sec` seconds from now.
+* `sec === true`: Extend timeout to now + the default timespan,
+  which usually is the `timeoutSec` with which `prx` was created.
+* `sec === null`: Just discard the timeout timer.
+
+
+### Info and Stats
+
+Treat these as read-only.
+
+* `.hasTimedOut`: (boolean) Whether the timeout has expired.
+* `.hadLateCalls`: `false` = `origCb` has not been notified yet;
+  non-negative integer: late call counter.
+* `.startTime`: If timestamps were requested, creation time of the TCO.
+* `.finishTime`: If timestamps were requested, this starts as `false`,
+  until the first call to `prx`, which then stores its current time here.
+
+
+### Config options
+
+These should be safe to modify after `prx` was created:
+
+* `.limitSec`: __Has no effect__ on currently active timers but
+  changes the the default timespan for follow-up `.renew`als.
+* `.onLateCall`
+* `.errFac`
+
+
+
+
+
+
+
+
+
+
+
 Usage
 -----
-from [test.js](test.js):
 
-<!--#include file="test.js" start="function readmeDemo(require) {" stop="}"
-  code="javascript" -->
-<!--#verbatim lncnt="63" -->
-```javascript
-  var flexiTimeout = require('callback-timeout-flexible'), noNameFunc,
-    test = require('./test.js'), foretell = test.logWithTime.expectEntry;
-
-  function greeting(cb) {
-    setTimeout(function () { cb(null, 'greeting: Hello world!'); }, 50);
-  }
-  greeting(flexiTimeout(test.logWithTime, 0.5));
-  foretell([ null, 'greeting: Hello world!' ]);
-
-  noNameFunc = function (err) {
-    if (err) { return test.logWithTime(err, 'fail @ anon receiver func'); }
-    return test.logWithTime(null, 'success @ anon receiver func');
-  };
-
-  function dropTheChain(msg, cb) {
-    test.logWithTime('dropTheChain: ' + (msg || cb));
-  }
-  dropTheChain('Not gonna care…', flexiTimeout(test.logWithTime, 0.25));
-  foretell(['Error: Timeout while waiting for callback @ '
-    + '[FlexibleCallbackTimeout for logWithTime(logEntry), '
-    + 'set up at readmeDemo (/…/test.js:23:35)]']);
-
-  dropTheChain('… about my callbacks', flexiTimeout(noNameFunc, 0.5));
-  foretell(['Error: Timeout while waiting for callback @ '
-    + '[FlexibleCallbackTimeout for function (err), '
-    + 'set up at readmeDemo (/…/test.js:28:40)]',
-    'fail @ anon receiver func']);
-
-  function slowTask(cb) {
-    test.logWithTime('slowTask: Gonna do lots of work!');
-    cb.timeout.renew(2);
-    setTimeout(function () {
-      test.logWithTime('slowTask: woke up.');
-      return cb(null, 'slowTask: Actually I just slept.');
-    }, 1000);
-  }
-  slowTask(flexiTimeout(test.logWithTime, 0.5));
-  foretell('slowTask: woke up.');
-
-  function tooOptimistic(cb) {
-    test.logWithTime('tooOptimistic: Just wait a sec.');
-    cb.timeout.renew(1);
-    setTimeout(function () {
-      test.logWithTime('tooOptimistic: woke up.');
-      return cb(null, 'tooOptimistic: Here you go.');
-    }, 1500);
-  }
-  tooOptimistic(flexiTimeout(test.logWithTime, {
-    limitSec: 0.5,
-    name: 'nomen est omen',
-    onLateCall: test.logWithTime.bind(null, 'too late:'),
-  }));
-  foretell(['Error: Timeout while waiting for callback @ '
-    + '[FlexibleCallbackTimeout nomen est omen]']);
-
-  foretell([ null, 'slowTask: Actually I just slept.' ]);
-
-  foretell('tooOptimistic: woke up.');
-  foretell([ 'too late:', null, 'tooOptimistic: Here you go.' ]);
-
-  process.on('exit', test.logWithTime.verifyProphecies);
-```
+see [usage.js](usage.js).
 
 
 <!--#toc stop="scan" -->
