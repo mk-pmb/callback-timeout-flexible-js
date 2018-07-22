@@ -21,12 +21,12 @@ module.exports = function readmeDemo(require) {
     test.logWithTime('dropTheChain: ' + (msg || cb));
   }
   dropTheChain('Not gonna care…', flexiTimeout(test.logWithTime, 0.25));
-  foretell(['Error: Timeout while waiting for callback @ '
+  foretell(['TimeoutError: Timeout while waiting for callback @ '
     + '[FlexibleCallbackTimeout for logWithTime(logEntry), '
     + 'set up at readmeDemo (/…/usage.js:23:35)]']);
 
   dropTheChain('… about my callbacks', flexiTimeout(noNameFunc, 0.5));
-  foretell(['Error: Timeout while waiting for callback @ '
+  foretell(['TimeoutError: Timeout while waiting for callback @ '
     + '[FlexibleCallbackTimeout for function (err), '
     + 'set up at readmeDemo (/…/usage.js:28:40)]',
     'fail @ anon receiver func']);
@@ -55,7 +55,7 @@ module.exports = function readmeDemo(require) {
     name: 'nomen est omen',
     onLateCall: test.logWithTime.bind(null, 'too late:'),
   }));
-  foretell(['Error: Timeout while waiting for callback @ '
+  foretell(['TimeoutError: Timeout while waiting for callback @ '
     + '[FlexibleCallbackTimeout nomen est omen]']);
 
   foretell([ null, 'slowTask: Actually I just slept.' ]);

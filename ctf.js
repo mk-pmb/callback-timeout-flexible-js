@@ -85,10 +85,12 @@ module.exports = (function (CF, PT, ctf) {
   };
 
   PT.errFac = function () {
-    var errMsg = String(this.errMsg
+    var err, msg = String(this.errMsg
       ).replace(/\v\{this\}/g, String(this)
       ).replace(/\v\{name\}/g, this.name);
-    return new Error(errMsg);
+    err = new Error(msg);
+    err.name = 'TimeoutError';
+    return err;
   };
   PT.errMsg = 'Timeout while waiting for callback @ \v{this}';
 
