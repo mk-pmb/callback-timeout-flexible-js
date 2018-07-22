@@ -1,5 +1,6 @@
 ﻿/*jslint indent: 2, maxlen: 80, continue: false, unparam: false, node: true */
 /* -*- tab-width: 2 -*- */
+/*globals Promise: true */
 
 module.exports = (function (CF, PT, ctf) {
   'use strict';
@@ -43,18 +44,26 @@ module.exports = (function (CF, PT, ctf) {
     return ('for ' + descr + ', set up at ' + stack);
   };
 
+  function makeDeferred(PrCls) {
+    if (PrCls === true) { PrCls = Promise; }
+    var f, p = new PrCls(function (y, n) { f = { resolve: y, reject: n}; });
+    return Object.assign(p, f);
+  }
+
   CF = function FlexibleCallbackTimeout(limitSec) {
     if (!(this instanceof CF)) { return new CF(limitSec); }
+    var tmo = this;
     if (limitSec && limitSec.limitSec) {
-      Object.assign(this, limitSec);
+      Object.assign(tmo, limitSec);
     } else {
-      this.limitSec = limitSec;
+      tmo.limitSec = limitSec;
     }
-    this.limitSec = this.maybeParseDuration(this.limitSec);
-    if (this.startTime || (this.startTime === 0)) {
-      this.finishTime = false;
-      if (this.startTime === true) { this.startTime = Date.now(); }
+    tmo.limitSec = tmo.maybeParseDuration(tmo.limitSec);
+    if (tmo.startTime || (tmo.startTime === 0)) {
+      tmo.finishTime = false;
+      if (tmo.startTime === true) { tmo.startTime = Date.now(); }
     }
+    if (tmo.promise) { tmo.promise = makeDeferred(tmo.promise); }
   };
   ctf.Timeout = CF;
   PT = CF.prototype;
@@ -129,6 +138,12 @@ module.exports = (function (CF, PT, ctf) {
       setImmediate(function callbackTimeoutFlexible_proxyCalled() {
         tmo.reportTo.apply(null, args);
       });
+      if (tmo.promise) {
+        setImmediate(args[0]
+          ? function () { tmo.promise.reject(args[0]); }
+          : function () { tmo.promise.resolve(args[1]); }
+          );
+      }
     } else {
       tmo.hadLateCalls = (+tmo.hadLateCalls || 0) + 1;
       if (onLate) {
@@ -139,13 +154,17 @@ module.exports = (function (CF, PT, ctf) {
   };
 
   PT.timeIsUp = function () {
-    var tmo = this;
+    var tmo = this, err;
     tmo.renew(null);
     tmo.hadLateCalls = (tmo.hadLateCalls || 0);
     tmo.hasTimedOut = true;
     if (tmo.onBeforeTimeout) { tmo.onBeforeTimeout(tmo); }
     if (!tmo.hasTimedOut) { return; }
-    return tmo.reportTo(tmo.errFac());
+    err = tmo.errFac();
+    if (tmo.promise) {
+      setImmediate(function () { tmo.promise.reject(err); });
+    }
+    return tmo.reportTo(err);
   };
 
 
