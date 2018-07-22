@@ -53,7 +53,7 @@ module.exports = (function (CF, PT, ctf) {
   CF = function FlexibleCallbackTimeout(limitSec) {
     if (!(this instanceof CF)) { return new CF(limitSec); }
     var tmo = this;
-    if (limitSec && limitSec.limitSec) {
+    if (ifObj(limitSec)) {
       Object.assign(tmo, limitSec);
     } else {
       tmo.limitSec = limitSec;
