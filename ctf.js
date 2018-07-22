@@ -13,7 +13,7 @@ module.exports = (function (CF, PT, ctf) {
     if (tmo.name === undefined) {
       tmo.guessName = ctf.guessName.bind(tmo, origCb, (new Error(' ')).stack);
     }
-    tmo.renew(true);
+    if (tmo.autostart !== false) { tmo.renew(true); }
     return prx;
   };
   ctf.proxyToString = function () {
@@ -56,6 +56,8 @@ module.exports = (function (CF, PT, ctf) {
   PT.hasTimedOut = false;
   PT.startTime = null;
   PT.finishTime = null;
+  PT.unref = false;
+  PT.autostart = true;
 
   PT.toString = function () {
     if ((this.name === undefined) && this.guessName) {
@@ -81,7 +83,8 @@ module.exports = (function (CF, PT, ctf) {
     if (sec === true) { sec = this.limitSec; }
     if (sec > 0) {
       this.hasTimedOut = false;
-      this.timer = setTimeout(this.timeIsUp.bind(this), sec * 1000);
+      this.timer = setTimeout(this.timeIsUp.bind(this), sec * 1e3);
+      if (this.unref === true) { this.timer.unref(); }
       return true;
     }
     throw new Error('invalid timespan: ' + String(sec));
