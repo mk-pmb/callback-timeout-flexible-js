@@ -3,13 +3,20 @@
 
 module.exports = (function (CF, PT, ctf) {
   'use strict';
+  var maxJsTimeoutSec = (Math.pow(2, 31) - 1) / 1e3;
+  function ifObj(x, d) { return ((x && typeof x) === 'object' ? x : d); }
 
   ctf = function callbackTimeoutFlexible(origCb, timeoutSec) {
-    var tmo = new CF(timeoutSec), prx;
+    var tmo = timeoutSec, cb = origCb, prx;
+    if (ifObj(cb)) {
+      tmo = cb;
+      cb = tmo.cb;
+    }
+    tmo = new CF(tmo);
     prx = function callbackTimeoutFlexible_proxy() { tmo.called(arguments); };
     prx.timeout = tmo;
     prx.toString = ctf.proxyToString;
-    tmo.reportTo = origCb;
+    tmo.reportTo = cb;
     if (tmo.name === undefined) {
       tmo.guessName = ctf.guessName.bind(tmo, origCb, (new Error(' ')).stack);
     }
@@ -43,6 +50,7 @@ module.exports = (function (CF, PT, ctf) {
     } else {
       this.limitSec = limitSec;
     }
+    this.limitSec = this.maybeParseDuration(this.limitSec);
     if (this.startTime || (this.startTime === 0)) {
       this.finishTime = false;
       if (this.startTime === true) { this.startTime = Date.now(); }
@@ -56,6 +64,7 @@ module.exports = (function (CF, PT, ctf) {
   PT.hasTimedOut = false;
   PT.startTime = null;
   PT.finishTime = null;
+  PT.parseDuration = null; // secret option for hrtmo-pmb
   PT.unref = false;
   PT.autostart = true;
 
@@ -74,21 +83,40 @@ module.exports = (function (CF, PT, ctf) {
   };
   PT.errMsg = 'Timeout while waiting for callback @ \v{this}';
 
+  PT.maybeParseDuration = function (dura) {
+    if (!this.parseDuration) { return dura; }
+    if (typeof dura !== 'string') { return dura; }
+    return this.parseDuration(dura);
+  };
+
   PT.renew = function (sec) {
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
     if (sec === null) { return; }
-    if (sec === true) { sec = this.limitSec; }
-    if (sec > 0) {
-      this.hasTimedOut = false;
-      this.timer = setTimeout(this.timeIsUp.bind(this), sec * 1e3);
-      if (this.unref === true) { this.timer.unref(); }
-      return true;
+    if (sec === true) {
+      this.limitSec = this.maybeParseDuration(this.limitSec);
+      sec = this.limitSec;
+    } else {
+      sec = this.maybeParseDuration(sec);
+    }
+    if (Number.isFinite(sec)) {
+      if (sec > maxJsTimeoutSec) {
+        throw new RangeError('timespan too long for a JS timeout: '
+          + String(sec));
+      }
+      if (sec > 0) {
+        this.hasTimedOut = false;
+        this.timer = setTimeout(this.timeIsUp.bind(this), sec * 1e3);
+        if (this.unref === true) { this.timer.unref(); }
+        return true;
+      }
     }
     throw new Error('invalid timespan: ' + String(sec));
   };
+
+  PT.abandon = function () { this.renew(null); };
 
   PT.called = function (args) {
     var tmo = this, onLate = tmo.onLateCall;
