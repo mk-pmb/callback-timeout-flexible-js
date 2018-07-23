@@ -62,6 +62,10 @@ Optional options:
   Supports these variable slots:
   * `\v{name}`: `tco.name`
   * `\v{this}`: `String(tco)`
+* `autostart`: If set to `false`, timers won't be started immediately.
+* `unref`: Set to `true` if timers shall be `.unref()`ed.
+  * The Node.js v8.11.3 API docs have an obscure performance warning about
+    `unref()`ed timers. Check your node version's docs if you care.
 
 
 
@@ -75,6 +79,12 @@ Timeout control objects
 * `sec === true`: Extend timeout to now + the default timespan,
   which usually is the `timeoutSec` with which `prx` was created.
 * `sec === null`: Just discard the timeout timer.
+
+
+### .abandon()
+
+Shorthand for `.renew(null)`.
+
 
 
 ### Info and Stats
