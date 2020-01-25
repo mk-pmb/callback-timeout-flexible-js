@@ -34,6 +34,7 @@ that were passed to `prx`. (`this` context is not preserved.)
 When the timeout expires before `prx` is invoked, `origCb` will be called
 with one argument, an `Error` that describes which timeout has expired.
 (Or whatever `opt.errFac` returned, see below.)
+The default error factory uses `'TimeoutError'` as the error's `.name`.
 
 There's a timeout control object (TCO) in `prx.timeout`
 which allows to extend the timeout (see below).
